@@ -3,6 +3,7 @@ package com.backend.backend.configs.jwt;
 import io.jsonwebtoken.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.WebUtils;
@@ -15,11 +16,14 @@ import java.util.Date;
 public class JwtUtils {
   private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
 
-  private String jwtSecret = "VAI_BRASIL";
+  @Value("${app.jwt.secret}")
+  private String jwtSecret;
 
-  private long jwtExpirationMs = 600000;
+  @Value("${app.jwt.expirationMs}")
+  private long jwtExpirationMs;
 
-  private String jwtCookie = "COOKIE_DO_BRASIL";
+  @Value("${app.jwt.cookieName}")
+  private String jwtCookie;
 
   public String getJwtFromCookies(HttpServletRequest request) {
 
