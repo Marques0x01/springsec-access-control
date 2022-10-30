@@ -2,6 +2,8 @@ package com.backend.backend.controllers;
 
 import com.backend.backend.configs.jwt.JwtUtils;
 import com.backend.backend.enums.ERole;
+import com.backend.backend.exception.TokenRefreshException;
+import com.backend.backend.models.RefreshToken;
 import com.backend.backend.models.Role;
 import com.backend.backend.models.User;
 import com.backend.backend.dtos.LoginRequestDto;
@@ -10,6 +12,7 @@ import com.backend.backend.dtos.MessageResponseDto;
 import com.backend.backend.dtos.UserInfoResponseDto;
 import com.backend.backend.repositories.RoleRepository;
 import com.backend.backend.repositories.UserRepository;
+import com.backend.backend.services.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -24,6 +27,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.*;
 
@@ -32,19 +36,22 @@ import java.util.*;
 @RequestMapping("/api/v1/auth")
 public class AuthController {
   @Autowired
-  AuthenticationManager authenticationManager;
+  private AuthenticationManager authenticationManager;
 
   @Autowired
-  UserRepository userRepository;
+  private UserRepository userRepository;
 
   @Autowired
-  RoleRepository roleRepository;
+  private RoleRepository roleRepository;
 
   @Autowired
-  PasswordEncoder encoder;
+  private PasswordEncoder encoder;
 
   @Autowired
-  JwtUtils jwtUtils;
+  private JwtUtils jwtUtils;
+
+  @Autowired
+  private AuthService authService;
 
   @PostMapping("/signin")
   public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequestDto loginRequestDto) {
@@ -62,10 +69,15 @@ public class AuthController {
 
     ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(userDetails.getUsername());
 
-    return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
-        .body(new UserInfoResponseDto(user.getId(),
-                                    user.getEmail(),
-                                    user.getRoles()));
+    RefreshToken refreshToken = authService.createRefreshToken(user);
+    ResponseCookie jwtRefreshCookie = jwtUtils.generateRefreshJwtCookie(refreshToken.getToken());
+
+    return ResponseEntity.ok()
+            .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
+            .header(HttpHeaders.SET_COOKIE, jwtRefreshCookie.toString())
+            .body(new UserInfoResponseDto(user.getId(),
+                    user.getEmail(),
+                    user.getRoles()));
   }
 
   @PostMapping("/signup")
@@ -88,8 +100,8 @@ public class AuthController {
             roles.add(adminRole);
 
             break;
-          case ROLE_TESTE:
-            Role modRole = roleRepository.findByName(ERole.ROLE_TESTE)
+          case ROLE_MOD:
+            Role modRole = roleRepository.findByName(ERole.ROLE_MOD)
                     .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
             roles.add(modRole);
 
@@ -120,9 +132,46 @@ public class AuthController {
 
   @PostMapping("/signout")
   public ResponseEntity<?> logoutUser() {
-    ResponseCookie cookie = jwtUtils.getCleanJwtCookie();
+    Object principle = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    if (principle.toString() != "anonymousUser") {
+      String userId = ((User) principle).getId();
+      authService.deleteByUserId(userId);
+    }
 
-    return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString())
-        .body(new MessageResponseDto("You've been signed out!"));
+    ResponseCookie jwtCookie = jwtUtils.getCleanJwtCookie();
+    ResponseCookie jwtRefreshCookie = jwtUtils.getCleanJwtRefreshCookie();
+
+    return ResponseEntity.ok()
+            .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
+            .header(HttpHeaders.SET_COOKIE, jwtRefreshCookie.toString())
+            .body(new MessageResponseDto("You've been signed out!"));
   }
+
+  @PostMapping("/refreshtoken")
+  public ResponseEntity<?> refreshtoken(HttpServletRequest request) {
+    String refreshToken = jwtUtils.getJwtRefreshFromCookies(request);
+
+    if ((refreshToken == null) && (refreshToken.length() <= 0)) {
+      return ResponseEntity.badRequest().body(new MessageResponseDto("Refresh Token is empty!"));
+    }
+
+    return authService.findByToken(refreshToken)
+            .map(authService::verifyExpiration)
+            .map(RefreshToken::getUser)
+            .map(user -> {
+              ResponseCookie newJwtCookie = jwtUtils.generateJwtCookie(user.getEmail());
+
+              RefreshToken newRefreshToken = authService.createRefreshToken(user);
+              ResponseCookie newJwtRefreshCookie = jwtUtils.generateRefreshJwtCookie(newRefreshToken.getToken());
+
+              return ResponseEntity.ok()
+                      .header(HttpHeaders.SET_COOKIE, newJwtCookie.toString())
+                      .header(HttpHeaders.SET_COOKIE, newJwtRefreshCookie.toString())
+                      .body(new MessageResponseDto("Token is refreshed successfully!"));
+            })
+            .orElseThrow(() -> new TokenRefreshException(refreshToken,
+                    "Refresh token is not in database!"));
+
+  }
+
 }

@@ -34,10 +34,9 @@ public class BackendApplication implements CommandLineRunner {
 				.build();
 
 		Role role3 = Role.builder()
-				.name(ERole.ROLE_TESTE)
+				.name(ERole.ROLE_MOD)
 				.build();
-//
-//		roleRepository.saveAll(Arrays.asList(role1, role2, role3));
 
+//		roleRepository.saveAll(Arrays.asList(role1, role2, role3));
 	}
 }

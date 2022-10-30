@@ -25,22 +25,8 @@ public class JwtUtils {
   @Value("${app.jwt.cookieName}")
   private String jwtCookie;
 
-  public String getJwtFromCookies(HttpServletRequest request) {
-
-    Cookie cookie = WebUtils.getCookie(request, jwtCookie);
-
-    if (cookie != null) {
-      return cookie.getValue();
-    } else {
-      return null;
-    }
-  }
-
-  public ResponseCookie generateJwtCookie(String email) {
-    String jwt = generateTokenFromUsername(email);
-    ResponseCookie cookie = ResponseCookie.from(jwtCookie, jwt).path("/api").maxAge(24 * 60 * 60).httpOnly(true).build();
-    return cookie;
-  }
+  @Value("${app.jwt.refreshCookieName}")
+  private String jwtRefreshCookie;
 
   public ResponseCookie getCleanJwtCookie() {
     ResponseCookie cookie = ResponseCookie.from(jwtCookie, null).path("/api").build();
@@ -69,13 +55,49 @@ public class JwtUtils {
 
     return false;
   }
-  
-  public String generateTokenFromUsername(String username) {   
+
+  public String generateTokenFromUsername(String username) {
     return Jwts.builder()
         .setSubject(username)
         .setIssuedAt(new Date())
         .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
         .signWith(SignatureAlgorithm.HS512, jwtSecret)
         .compact();
+  }
+
+  public ResponseCookie generateRefreshJwtCookie(String refreshToken) {
+    return generateCookie(jwtRefreshCookie, refreshToken, "/api/v1/auth/refreshtoken");
+  }
+
+  private ResponseCookie generateCookie(String name, String value, String path) {
+    ResponseCookie cookie = ResponseCookie.from(name, value).path(path).maxAge(24 * 60 * 60).httpOnly(true).build();
+    return cookie;
+  }
+
+  public ResponseCookie generateJwtCookie(String email) {
+    String jwt = generateTokenFromUsername(email);
+    return generateCookie(jwtCookie, jwt, "/api");
+  }
+
+  private String getCookieValueByName(HttpServletRequest request, String name) {
+    Cookie cookie = WebUtils.getCookie(request, name);
+    if (cookie != null) {
+      return cookie.getValue();
+    } else {
+      return null;
+    }
+  }
+
+  public String getJwtFromCookies(HttpServletRequest request) {
+    return getCookieValueByName(request, jwtCookie);
+  }
+
+  public String getJwtRefreshFromCookies(HttpServletRequest request) {
+    return getCookieValueByName(request, jwtRefreshCookie);
+  }
+
+  public ResponseCookie getCleanJwtRefreshCookie() {
+    ResponseCookie cookie = ResponseCookie.from(jwtRefreshCookie, null).path("/api/v1/auth/refreshtoken").build();
+    return cookie;
   }
 }

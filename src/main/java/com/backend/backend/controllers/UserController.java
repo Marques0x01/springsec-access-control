@@ -15,22 +15,22 @@ public class UserController {
     @Autowired
     private UserRepository userRepository;
 
-    @GetMapping
+    @GetMapping("/admin")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public User userModel(){
-        return userRepository.findAll().get(0);
+    public String userModel(){
+        return "ADMIN ON";
     }
 
     @GetMapping("/user")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public User userModel2(){
-        return userRepository.findAll().get(1);
+    public String userModel2(){
+        return "USER ON";
     }
 
-    @GetMapping("/teste")
-    @PreAuthorize("hasRole('ROLE_TESTE')")
-    public User userModel3(){
-        return userRepository.findAll().get(2);
+    @GetMapping("/mod")
+    @PreAuthorize("hasRole('ROLE_MOD')")
+    public String userModel3(){
+        return "MOD ON";
     }
 
 }

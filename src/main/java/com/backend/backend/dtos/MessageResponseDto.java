@@ -1,5 +1,8 @@
 package com.backend.backend.dtos;
 
+import lombok.Data;
+
+@Data
 public class MessageResponseDto {
 	private String message;
 
@@ -7,11 +10,4 @@ public class MessageResponseDto {
 	    this.message = message;
 	  }
 
-	public String getMessage() {
-		return message;
-	}
-
-	public void setMessage(String message) {
-		this.message = message;
-	}
 }
