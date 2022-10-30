@@ -1,7 +1,8 @@
 package com.backend.backend.models;
 
 
-import com.backend.backend.enums.RoleEnum;
+import com.backend.backend.enums.ERole;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,9 +20,10 @@ public class Role implements GrantedAuthority {
 
     @Id
     private String id;
-    private RoleEnum name;
+    private ERole name;
 
     @Override
+    @JsonIgnore
     public String getAuthority() {
         return this.name.toString();
     }

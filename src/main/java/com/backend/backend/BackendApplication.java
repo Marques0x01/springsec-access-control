@@ -1,6 +1,6 @@
 package com.backend.backend;
 
-import com.backend.backend.enums.RoleEnum;
+import com.backend.backend.enums.ERole;
 import com.backend.backend.models.Role;
 import com.backend.backend.models.User;
 import com.backend.backend.repositories.RoleRepository;
@@ -17,8 +17,6 @@ import java.util.Arrays;
 public class BackendApplication implements CommandLineRunner {
 
 	@Autowired
-	private UserRepository userRepository;
-	@Autowired
 	private RoleRepository roleRepository;
 
 	public static void main(String[] args) {
@@ -28,38 +26,18 @@ public class BackendApplication implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 		Role role1 = Role.builder()
-				.name(RoleEnum.ROLE_ADMIN)
+				.name(ERole.ROLE_ADMIN)
 				.build();
 
 		Role role2 = Role.builder()
-				.name(RoleEnum.ROLE_USER)
+				.name(ERole.ROLE_USER)
 				.build();
 
 		Role role3 = Role.builder()
-				.name(RoleEnum.ROLE_TESTE)
+				.name(ERole.ROLE_TESTE)
 				.build();
+//
+//		roleRepository.saveAll(Arrays.asList(role1, role2, role3));
 
-		roleRepository.saveAll(Arrays.asList(role1, role2, role3));
-
-		userRepository.save(User.builder()
-				.name("first_user")
-				.email("first_user@gmail.com")
-				.roles(Arrays.asList(role1))
-				.password(new BCryptPasswordEncoder().encode("123"))
-				.build());
-
-		userRepository.save(User.builder()
-				.name("second_user")
-				.email("second_user@gmail.com")
-				.roles(Arrays.asList(role2))
-				.password(new BCryptPasswordEncoder().encode("123"))
-				.build());
-
-		userRepository.save(User.builder()
-				.name("third_user")
-				.email("third_user@gmail.com")
-				.roles(Arrays.asList(role3))
-				.password(new BCryptPasswordEncoder().encode("123"))
-				.build());
 	}
 }

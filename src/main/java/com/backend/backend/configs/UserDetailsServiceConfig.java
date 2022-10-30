@@ -4,6 +4,7 @@ package com.backend.backend.configs;
 import com.backend.backend.models.User;
 import com.backend.backend.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -24,4 +25,5 @@ public class UserDetailsServiceConfig implements UserDetailsService {
 
         return new org.springframework.security.core.userdetails.User(userModel.getUsername(), userModel.getPassword(), true, true, true,true, userModel.getAuthorities());
     }
+
 }
